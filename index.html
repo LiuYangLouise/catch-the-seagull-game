@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烦人的SEAGULL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8c6ff 0%, #e6f0ff 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 600px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(124, 165, 232, 0.3);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px 30px;
+            text-align: center;
+            border-bottom: 2px solid #e1edff;
+        }
+
+        .title {
+            color: #7ca5e8;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(124, 165, 232, 0.2);
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: #a0c1f1;
+            font-size: 1.1rem;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #e8f2ff 0%, #f5f9ff 100%);
+        }
+
+        .seagull {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.1s;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .seagull:hover {
+            transform: scale(1.05);
+        }
+
+        /* 极简像素海鸥样式 */
+        .seagull-pixel-grid {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(8, 10px);
+            grid-template-rows: repeat(8, 10px);
+        }
+
+        .pixel {
+            width: 10px;
+            height: 10px;
+        }
+
+        /* 像素颜色定义 */
+        .pixel-black { background-color: #000000; }
+        .pixel-white { background-color: #FFFFFF; }
+        .pixel-pink { background-color: #FFB6C1; }
+        .pixel-yellow { background-color: #FFCC00; }
+
+        /* 胜利对话框 */
+        .win-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            width: 80%;
+            max-width: 500px;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(124, 165, 232, 0.5);
+            text-align: center;
+            z-index: 100;
+            display: none;
+            border: 3px solid #7ca5e8;
+            animation: dialogAppear 0.5s ease-out;
+        }
+
+        @keyframes dialogAppear {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            70% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .win-title {
+            color: #7ca5e8;
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(124, 165, 232, 0.2);
+            line-height: 1.3;
+        }
+
+        .win-message {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .controls {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-top: 2px solid #e1edff;
+        }
+
+        /* 统一按钮样式 */
+        .btn {
+            padding: 12px 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #7ca5e8;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(124, 165, 232, 0.2);
+            border: 2px solid #7ca5e8;
+        }
+
+        .btn:hover {
+            background-color: #7ca5e8;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(124, 165, 232, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(124, 165, 232, 0.3);
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(124, 165, 232, 0.2);
+            color: #7ca5e8;
+            font-size: 1.1rem;
+            font-weight: bold;
+            z-index: 5;
+            border: 2px solid #7ca5e8;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(124, 165, 232, 0.2);
+            color: #7ca5e8;
+            font-size: 1rem;
+            max-width: 300px;
+            border: 2px solid #7ca5e8;
+        }
+
+        .instructions h3 {
+            margin-bottom: 8px;
+        }
+
+        .instructions p {
+            margin-bottom: 5px;
+        }
+
+        .paw-print {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(124, 165, 232, 0.2);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes pawAnimation {
+            0% { opacity: 0.8; transform: scale(0.2); }
+            50% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-container {
+                height: 500px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .win-title {
+                font-size: 2rem;
+            }
+            
+            .seagull {
+                width: 64px;
+                height: 64px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">烦人的SEAGULL</h1>
+            <p class="subtitle">逮这只在底线来回试探的海鸥，让它无处可逃</p>
+        </div>
+        
+        <div class="game-area" id="gameArea">
+            <!-- 海鸥将在这里动态生成 -->
+            <div class="stats" id="stats">
+                点击次数: <span id="clickCount">0</span> | 时间: <span id="timer">0</span>秒
+            </div>
+            
+            <div class="instructions">
+                <h3>游戏说明</h3>
+                <p>这只烦人海鸥正在屏幕上飞速移动，用鼠标左键点击它！</p>
+                <p>点击到它即可获得胜利。</p>
+                <p>准备好了吗孩子们？</p>
+            </div>
+            
+            <div class="win-dialog" id="winDialog">
+                <h2 class="win-title">终于找到你啦TOY o(╥﹏╥)o</h2>
+                <p class="win-message">你用了 <span id="finalTime">0</span> 秒和 <span id="finalClicks">0</span> 次点击抓住了TOY！</p>
+                <button class="btn" id="playAgainBtn">再来一次</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="restartBtn">重新开始</button>
+            <button class="btn" id="pauseBtn">暂停游戏</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 游戏元素
+            const gameArea = document.getElementById('gameArea');
+            const winDialog = document.getElementById('winDialog');
+            const stats = document.getElementById('stats');
+            const clickCountElement = document.getElementById('clickCount');
+            const timerElement = document.getElementById('timer');
+            const finalTimeElement = document.getElementById('finalTime');
+            const finalClicksElement = document.getElementById('finalClicks');
+            
+            // 按钮
+            const restartBtn = document.getElementById('restartBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            
+            // 游戏状态变量
+            let clickCount = 0;
+            let gameTime = 0;
+            let gameActive = true;
+            let gamePaused = false;
+            let seagullMoving = true;
+            let timerInterval;
+            let seagullMoveInterval;
+            
+            // 海鸥移动速度参数
+            const SEAGULL_SPEED = 150;
+            const MOVE_INTERVAL = 300;
+            
+            // 创建海鸥（原猫咪形象保持不变）
+            const seagull = createPixelSeagull();
+            
+            // 初始化游戏
+            initGame();
+            
+            // 创建极简像素形象（保持原猫咪形象）
+            function createPixelSeagull() {
+                const seagullElement = document.createElement('div');
+                seagullElement.className = 'seagull';
+                seagullElement.id = 'seagullElement';
+                
+                const pixelGrid = document.createElement('div');
+                pixelGrid.className = 'seagull-pixel-grid';
+                
+                // 定义8x8像素网格的图案（保持原猫咪图案）
+                // 0=透明, 1=黑色, 2=白色, 3=粉色, 4=黄色
+                const pixelMap = [
+                    [1,1,1,1,1,1,1,1], // 第1行：黑色额头顶部
+                    [1,2,2,2,2,2,2,1], // 第2行：黑色边缘+白色脸部
+                    [1,2,2,2,2,2,2,1], // 第3行：白色脸部
+                    [1,2,4,4,4,4,2,1], // 第4行：黄色眼睛区域
+                    [1,2,4,2,2,4,2,1], // 第5行：眼睛+白色脸部
+                    [1,2,2,3,3,2,2,1], // 第6行：粉色鼻子区域
+                    [1,2,2,2,2,2,2,1], // 第7行：白色下巴
+                    [1,1,2,2,2,2,1,1]  // 第8行：黑色下巴底部
+                ];
+                
+                // 添加黑色细眼线
+                const enhancedPixelMap = [
+                    // 清晰的图案
+                    [1,1,1,1,1,1,1,1], // 黑色额头
+                    [1,2,2,2,2,2,2,1], // 黑白分界
+                    [1,2,2,2,2,2,2,1], // 白色脸颊
+                    [1,2,1,4,4,1,2,1], // 黑色眼线+黄色眼睛
+                    [1,2,1,4,4,1,2,1], // 黑色眼线+黄色眼睛
+                    [1,2,2,3,3,2,2,1], // 粉色三角形鼻子
+                    [1,2,2,2,2,2,2,1], // 白色嘴巴区域
+                    [1,1,2,2,2,2,1,1]  // 黑色下巴轮廓
+                ];
+                
+                // 创建像素网格
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const pixelValue = enhancedPixelMap[row][col];
+                        const pixel = document.createElement('div');
+                        pixel.className = 'pixel';
+                        
+                        // 设置颜色
+                        switch(pixelValue) {
+                            case 1: // 黑色
+                                pixel.classList.add('pixel-black');
+                                break;
+                            case 2: // 白色
+                                pixel.classList.add('pixel-white');
+                                break;
+                            case 3: // 粉色
+                                pixel.classList.add('pixel-pink');
+                                break;
+                            case 4: // 黄色
+                                pixel.classList.add('pixel-yellow');
+                                break;
+                            default:
+                                // 透明像素
+                                pixel.style.backgroundColor = 'transparent';
+                        }
+                        
+                        pixelGrid.appendChild(pixel);
+                    }
+                }
+                
+                // 添加眼睛高光点（白色像素）
+                const highlightPositions = [
+                    {row: 3, col: 3}, // 左眼高光
+                    {row: 3, col: 4}, // 右眼高光
+                ];
+                
+                highlightPositions.forEach(pos => {
+                    const index = pos.row * 8 + pos.col;
+                    if (pixelGrid.children[index]) {
+                        const highlight = document.createElement('div');
+                        highlight.className = 'pixel pixel-white';
+                        highlight.style.position = 'absolute';
+                        highlight.style.left = `${pos.col * 10 + 3}px`;
+                        highlight.style.top = `${pos.row * 10 + 3}px`;
+                        highlight.style.width = '4px';
+                        highlight.style.height = '4px';
+                        pixelGrid.appendChild(highlight);
+                    }
+                });
+                
+                seagullElement.appendChild(pixelGrid);
+                gameArea.appendChild(seagullElement);
+                
+                return seagullElement;
+            }
+            
+            // 初始化游戏
+            function initGame() {
+                // 重置游戏状态
+                clickCount = 0;
+                gameTime = 0;
+                gameActive = true;
+                gamePaused = false;
+                seagullMoving = true;
+                
+                // 更新显示
+                clickCountElement.textContent = clickCount;
+                timerElement.textContent = gameTime;
+                
+                // 隐藏胜利对话框
+                winDialog.style.display = 'none';
+                
+                // 随机放置海鸥
+                positionSeagullRandomly();
+                
+                // 开始计时器
+                startTimer();
+                
+                // 开始海鸥移动
+                startSeagullMovement();
+                
+                // 设置海鸥点击事件
+                seagull.onclick = handleSeagullClick;
+                
+                // 更新按钮文本
+                pauseBtn.textContent = '暂停游戏';
+                
+                // 显示海鸥
+                seagull.style.display = 'block';
+            }
+            
+            // 随机放置海鸥
+            function positionSeagullRandomly() {
+                const areaWidth = gameArea.clientWidth;
+                const areaHeight = gameArea.clientHeight;
+                const seagullWidth = seagull.offsetWidth;
+                const seagullHeight = seagull.offsetHeight;
+                
+                // 确保海鸥完全在游戏区域内
+                const maxX = areaWidth - seagullWidth;
+                const maxY = areaHeight - seagullHeight;
+                
+                const randomX = Math.floor(Math.random() * maxX);
+                const randomY = Math.floor(Math.random() * maxY);
+                
+                seagull.style.left = `${randomX}px`;
+                seagull.style.top = `${randomY}px`;
+            }
+            
+            // 开始计时器
+            function startTimer() {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    if (!gamePaused && gameActive) {
+                        gameTime++;
+                        timerElement.textContent = gameTime;
+                    }
+                }, 1000);
+            }
+            
+            // 开始海鸥移动
+            function startSeagullMovement() {
+                clearInterval(seagullMoveInterval);
+                
+                seagullMoveInterval = setInterval(() => {
+                    if (!gamePaused && gameActive && seagullMoving) {
+                        moveSeagull();
+                    }
+                }, MOVE_INTERVAL);
+            }
+            
+            // 移动海鸥
+            function moveSeagull() {
+                const areaWidth = gameArea.clientWidth;
+                const areaHeight = gameArea.clientHeight;
+                const seagullWidth = seagull.offsetWidth;
+                const seagullHeight = seagull.offsetHeight;
+                
+                // 获取当前位置
+                const currentX = parseInt(seagull.style.left) || 0;
+                const currentY = parseInt(seagull.style.top) || 0;
+                
+                // 随机移动方向
+                let directionX, directionY;
+                
+                if (Math.random() < 0.6) {
+                    directionX = Math.random() < 0.5 ? -1 : 1;
+                    directionY = Math.random() < 0.5 ? -1 : 1;
+                } else {
+                    directionX = Math.floor(Math.random() * 3) - 1;
+                    directionY = Math.floor(Math.random() * 3) - 1;
+                }
+                
+                // 计算新位置
+                let newX = currentX + directionX * SEAGULL_SPEED;
+                let newY = currentY + directionY * SEAGULL_SPEED;
+                
+                // 限制在游戏区域内
+                if (newX < 0 || newX > areaWidth - seagullWidth) {
+                    newX = currentX - directionX * SEAGULL_SPEED;
+                }
+                if (newY < 0 || newY > areaHeight - seagullHeight) {
+                    newY = currentY - directionY * SEAGULL_SPEED;
+                }
+                
+                // 确保在边界内
+                newX = Math.max(0, Math.min(newX, areaWidth - seagullWidth));
+                newY = Math.max(0, Math.min(newY, areaHeight - seagullHeight));
+                
+                // 应用新位置
+                seagull.style.left = `${newX}px`;
+                seagull.style.top = `${newY}px`;
+                
+                // 添加爪印效果
+                createPawPrint(currentX + seagullWidth/2, currentY + seagullHeight/2);
+            }
+            
+            // 创建爪印效果
+            function createPawPrint(x, y) {
+                const pawPrint = document.createElement('div');
+                pawPrint.className = 'paw-print';
+                pawPrint.style.left = `${x}px`;
+                pawPrint.style.top = `${y}px`;
+                
+                gameArea.appendChild(pawPrint);
+                
+                // 启动动画
+                pawPrint.style.animation = 'pawAnimation 1s forwards';
+                
+                // 动画结束后移除元素
+                setTimeout(() => {
+                    if (pawPrint.parentNode) {
+                        pawPrint.parentNode.removeChild(pawPrint);
+                    }
+                }, 1000);
+            }
+            
+            // 处理海鸥点击
+            function handleSeagullClick() {
+                if (!gameActive || gamePaused) return;
+                
+                // 游戏胜利
+                gameActive = false;
+                seagullMoving = false;
+                
+                // 显示胜利对话框
+                finalTimeElement.textContent = gameTime;
+                finalClicksElement.textContent = clickCount;
+                winDialog.style.display = 'block';
+                
+                // 添加庆祝效果
+                celebrateWin();
+            }
+            
+            // 庆祝胜利效果
+            function celebrateWin() {
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * gameArea.clientWidth;
+                        const y = Math.random() * gameArea.clientHeight;
+                        createPawPrint(x, y);
+                    }, i * 50);
+                }
+            }
+            
+            // 游戏区域点击（统计点击次数）
+            gameArea.addEventListener('click', function(e) {
+                if (!gameActive || gamePaused) return;
+                
+                // 检查是否点击了海鸥
+                const clickedSeagull = e.target.closest('.seagull');
+                if (clickedSeagull === seagull) return;
+                
+                clickCount++;
+                clickCountElement.textContent = clickCount;
+                
+                // 创建点击效果
+                createPawPrint(e.clientX - gameArea.getBoundingClientRect().left, 
+                              e.clientY - gameArea.getBoundingClientRect().top);
+            });
+            
+            // 按钮事件监听
+            restartBtn.addEventListener('click', function() {
+                initGame();
+            });
+            
+            pauseBtn.addEventListener('click', function() {
+                gamePaused = !gamePaused;
+                this.textContent = gamePaused ? '继续游戏' : '暂停游戏';
+                
+                if (!gamePaused && gameActive) {
+                    startSeagullMovement();
+                }
+            });
+            
+            playAgainBtn.addEventListener('click', function() {
+                winDialog.style.display = 'none';
+                initGame();
+            });
+            
+            // 窗口大小改变时重新放置海鸥
+            window.addEventListener('resize', function() {
+                if (gameActive) {
+                    positionSeagullRandomly();
+                }
+            });
+            
+            // 初始海鸥位置
+            positionSeagullRandomly();
+        });
+    </script>
+</body>
+</html>
